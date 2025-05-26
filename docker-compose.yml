@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+    postgres:
+        image: postgres:7.5-1.pgdg120+1
+        restart: always
+        environment:
+            - POSTGRES_USER=Orlando
+            - POSTGRES_PASSWORD=12345678
+            - POSTGRES_DB=project_manager_db
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+volumes:
+    postgres_data:
