@@ -1,5 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { CollisionError, DatabaseConnectionError } from "../errors/errors.js";
 import { signToken } from "../utils/jwt.utils.js";
 
 const SALT_ROUNDS = 10;
@@ -8,32 +9,7 @@ const prisma = new PrismaClient();
 export class AuthService {
     static async register(username, email, password) {
         try {
-            const errors = [];
-
-            const existingUser = await prisma.user.findFirst({
-                where: {
-                    OR: [{ email }, { username }],
-                },
-            });
-
-            if (existingUser) {
-                if (existingUser.email === email) {
-                    errors.push("This email is already registered");
-                }
-
-                if (existingUser.username === username) {
-                    errors.push("This username is already in use");
-                }
-            }
-
-            if (errors.length) {
-                const error = new Error("Validation error");
-                error.errors = errors;
-                throw error;
-            }
-
             const hashed = await bcrypt.hash(password, SALT_ROUNDS);
-
             const user = await prisma.user.create({
                 data: { email, username, password: hashed },
             });
@@ -41,30 +17,34 @@ export class AuthService {
             const token = signToken({ userId: user.id });
             return { user, token };
         } catch (err) {
-            if (err.errors) {
-                const error = new Error(err.message);
-                error.errors = err.errors;
-                throw error;
+            const isCollisionError = err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+            if (isCollisionError) {
+                const field = err.meta?.target[0] || "unknown";
+                throw new CollisionError(field);
             }
-
-            throw new Error("Registration failed");
+            throw err;
         }
     }
 
     static async login(username, password) {
-        const user = await prisma.user.findUnique({ where: { username } });
+        try {
+            const user = await prisma.user.findUnique({ where: { username } });
+            const location = "username or password fields";
+            const message = "The username or password are wrong";
+            if (!user) {
+                throw new DatabaseConnectionError(location, message);
+            }
 
-        if (!user) {
-            throw new Error("Invalid credentials");
+            const valid = await bcrypt.compare(password, user.password);
+
+            if (!valid) {
+                throw new DatabaseConnectionError(location, message);
+            }
+
+            const token = signToken({ userId: user.id });
+            return { user, token };
+        } catch (err) {
+            throw err;
         }
-
-        const valid = await bcrypt.compare(password, user.password);
-
-        if (!valid) {
-            throw new Error("Invalid credentials");
-        }
-
-        const token = signToken({ userId: user.id });
-        return { user, token };
     }
 }

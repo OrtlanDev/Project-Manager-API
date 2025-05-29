@@ -1,38 +1,31 @@
-export const MIN_PASSWORD_LENGTH = 8;
-export const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_USERNAME_LENGTH = 1;
+const MIN_PASSWORD_LENGTH = 8;
 
-export function validateRegister(data = {}) {
-    const { username, email, password } = data;
-    const errors = [];
+import { body } from "express-validator";
 
-    if (!username) {
-        errors.push("Username is required");
-    }
-    if (!email) {
-        errors.push("Email is required");
-    }
-    if (!password) {
-        errors.push("Password is required");
-    }
+export const usernameValidator = body("username")
+    .notEmpty()
+    .withMessage("The username is mandatory")
+    .isLength({ min: MIN_USERNAME_LENGTH })
+    .withMessage(`Must have at least ${MIN_USERNAME_LENGTH} character`)
+    .trim()
+    .escape();
 
-    if (password && password.length < MIN_PASSWORD_LENGTH) {
-        errors.push(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
-    }
+export const passwordValidator = body("password")
+    .notEmpty()
+    .withMessage("The password is mandatory")
+    .isLength({ min: MIN_PASSWORD_LENGTH })
+    .withMessage(`You must have at least ${MIN_PASSWORD_LENGTH} characters`)
+    .trim()
+    .escape();
 
-    if (email && !emailRegex.test(email)) {
-        errors.push("Invalid email format");
-    }
+export const emailValidator = body("email")
+    .notEmpty()
+    .withMessage("Mail is mandatory")
+    .isEmail()
+    .withMessage("It must be a valid email")
+    .normalizeEmail();
 
-    return errors;
-}
+export const registerValidation = () => [usernameValidator, emailValidator, passwordValidator];
 
-export function validateLogin(data = {}) {
-    const { username, password } = data;
-    const errors = [];
-
-    if (!username || !password) {
-        errors.push("Username and password are required");
-    }
-
-    return errors;
-}
+export const loginValidation = () => [usernameValidator, passwordValidator];

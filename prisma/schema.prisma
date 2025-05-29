@@ -18,7 +18,7 @@ model User {
 
 model Project {
   id          String   @id @default(uuid())
-  title       String
+  title       String   @unique
   description String?
   user        User     @relation(fields: [userId], references: [id])
   userId      String   @map("userId")
