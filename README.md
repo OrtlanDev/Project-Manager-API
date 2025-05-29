@@ -1,4 +1,4 @@
-# **🚀 Gestor de Proyectos y Tareas API**
+# **🚀 Gestor de Proyectos y Tareas (API REST)**
 
 Proyecto backend en Node.js con Express y Prisma que permite a cada usuario gestionar sus propios proyectos y, dentro de ellos, sus tareas. Arquitectura limpia con capas de servicio, controlador y validación para asegurar mantenibilidad y escalabilidad.
 
